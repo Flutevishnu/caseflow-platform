@@ -1,6 +1,7 @@
-import { Badge, Pagination, Select, Table, TextField } from "innovations-ui-kit";
+import { Alert, Badge, Pagination, Select, Table, TextField } from "innovations-ui-kit";
 import type { BadgeTone, SortState, TableColumn } from "innovations-ui-kit";
 import { useCaseFilters } from "../hooks/useCaseFilters";
+import { useCases } from "../hooks/useCases";
 import type { Case } from "../model/case";
 import { PRIORITY, STATUS } from "../model/caseDto";
 
@@ -51,8 +52,9 @@ const columns: TableColumn<Case>[] = [
 export function CaseListPage() {
     const { q, status, priority, sort, page, update } = useCaseFilters();
 
-    const cases: Case[] = [];
-    const pageCount = 1;
+    const { data, error, loading } = useCases({ q, status, priority, sort, page });
+    const cases = data?.items ?? [];
+    const pageCount = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
 
     const sortState: SortState = {
         key: sort.replace(/^-/, ""),
@@ -84,6 +86,9 @@ export function CaseListPage() {
                 />
             </form>
 
+            {error && <Alert tone="danger" title="Could not load cases">{error}</Alert>}
+            {loading && <p role="status">Loading cases...</p>}
+
             <Table
                 caption="Cases"
                 columns={columns}
@@ -93,7 +98,7 @@ export function CaseListPage() {
                 onSortChange={(next) =>
                     update({ sort: next ? `${next.direction === "desc" ? "-" : ""}${next.key}` : "" })
                 }
-                emptyMessage="No cases to show yet."
+                emptyMessage="No cases match your filters."
             />
 
             <Pagination
